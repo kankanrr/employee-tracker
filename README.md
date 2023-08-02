@@ -27,7 +27,7 @@ This app is a command-line interface using Node JS where a user can select from 
 
 ## Demo
 
-Video Guide:
+Video Guide: https://drive.google.com/file/d/1qEYg1kvJpI8Bzny6MuZPyuT9eaksmEFv/view?usp=sharing
 
 Screenshot:
 
