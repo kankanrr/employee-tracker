@@ -1,4 +1,4 @@
--- department seeds
+
 INSERT INTO department (name)
 VALUE ("Sales");
 INSERT INTO department (name)
@@ -8,7 +8,6 @@ VALUE ("Finance");
 INSERT INTO department (name)
 VALUE ("Legal");
 
--- role seeds
 INSERT INTO role (title, salary, department_id)
 VALUE ("Software Engineer", 120000, 2);
 INSERT INTO role (title, salary, department_id)
@@ -24,7 +23,6 @@ VALUE ("Software Engineer", 120000, 2);
 INSERT INTO role (title, salary, department_id)
 VALUE ("Lawyer", 190000, 4);
 
--- employee seeds
 INSERT INTO employee (first_name, last_name, manager_id, role_id)
 VALUE ("Keandrian", "Jones", null, 1);
 INSERT INTO employee (first_name, last_name, manager_id, role_id)

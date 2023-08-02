@@ -2,13 +2,13 @@
 
 const inquirer = require("inquirer");
 const mySql = require("mysql2");
-const consoleTable = require("console.table");
+const cTable = require("console.table");
 
 // database connection
 
 const db = mySql.createConnection({
   host: "localhost",
-  port: 3001,
+  port: 3306,
   user: "root",
   password: "kankanrr",
   database: "employee_db",
@@ -18,58 +18,62 @@ const db = mySql.createConnection({
 
 db.connect(function (err) {
   if (err) throw err;
-  console.log("Connected to employee_db");
-  promptUser();
+  console.log("Connected to emp_db");
+  startPrompts();
 });
 
 // promptUser function
 
-function promptUser() {
+function startPrompts() {
   inquirer
     .prompt([
       {
         type: "list",
-        message: "Now viewing employee database...",
+        message: "What would you like to do?",
         name: "choice",
         choices: [
-          "Show All Employees",
-          "Show All Roles",
-          "Show All Departments",
-          "Update An Employee",
-          "Add An Employee",
-          "Add A Role",
-          "Add A Department",
+          "View All Employees",
+          "View All Roles",
+          "View All Departments",
+          "Update Employee",
+          "Add Employee",
+          "Add Role",
+          "Add Department",
         ],
       },
     ])
     .then(function (val) {
       switch (val.choice) {
-        case "Show All Employees":
-          showEmployees();
+        case "View All Employees":
+          viewAllEmployees();
           break;
 
-        case "Show All Roles":
-          showRoles();
+        case "View All Roles":
+          viewAllRoles();
           break;
 
-        case "Show All Departments":
-          showDepartments();
+        case "View All Departments":
+          viewAllDepartments();
           break;
 
-        case "Update An Employee":
+        case "Update Employee":
           updateEmployee();
           break;
 
-        case "Add An Employee":
+        case "Add Employee":
           addEmployee();
           break;
 
-        case "Add A Role":
+        case "Add Role":
           addRole();
           break;
 
-        case "Add A Department":
+        case "Add Department":
           addDepartment();
+          break;
+
+        case "View Employees by Manager":
+          viewEmployeesByManager();
           break;
       }
     });
@@ -79,11 +83,24 @@ function promptUser() {
 
 function viewAllEmployees() {
   db.query(
-    "SELECT employee.first_name, employee.last_name, role.title, role.salary, department.name, CONCAT(e.first_name, ' ' ,e.last_name) AS Manager FROM employee INNER JOIN role on role.id = employee.role_id INNER JOIN department on department.id = role.department_id left join employee e on employee.manager_id = e.id;",
+    "SELECT employee.first_name, employee.last_name, role.title, role.salary, department.name, CONCAT(e.first_name, ' ' ,e.last_name) AS Manager FROM employee INNER JOIN role on role.id = employee.role_id INNER JOIN department on department.id = role.department_id LEFT JOIN employee e on employee.manager_id = e.id;",
     function (err, res) {
       if (err) throw err;
       console.table(res);
-      startPrompt();
+      startPrompts();
+    }
+  );
+}
+
+// ==== [View Employess by Role] ====
+
+function viewAllRoles() {
+  db.query(
+    "SELECT DISTINCT role.title AS Roles FROM employee JOIN role ON employee.role_id = role.id;",
+    function (err, res) {
+      if (err) throw err;
+      console.table(res);
+      startPrompts();
     }
   );
 }
@@ -91,14 +108,11 @@ function viewAllEmployees() {
 //  ==== [View all Departments] ====
 
 function viewAllDepartments() {
-  db.query(
-    "SELECT employee.first_name, employee.last_name, department.name AS Department FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id ORDER BY employee.id;",
-    function (err, res) {
-      if (err) throw err;
-      console.table(res);
-      startPrompt();
-    }
-  );
+  db.query("SELECT name AS Departments FROM department;", function (err, res) {
+    if (err) throw err;
+    console.table(res);
+    startPrompts();
+  });
 }
 
 // adds role option in tracker
@@ -138,23 +152,23 @@ function addEmployee() {
       {
         name: "firstname",
         type: "input",
-        message: "Enter their first name ",
+        message: "Enter first name: ",
       },
       {
         name: "lastname",
         type: "input",
-        message: "Enter their last name ",
+        message: "Enter last name: ",
       },
       {
         name: "role",
         type: "list",
-        message: "What is their role? ",
+        message: "Enter role: ",
         choices: selectRole(),
       },
       {
         name: "choice",
         type: "rawlist",
-        message: "Whats their managers name?",
+        message: "Enter manager name:",
         choices: selectManager(),
       },
     ])
@@ -162,17 +176,12 @@ function addEmployee() {
       var roleId = selectRole().indexOf(val.role) + 1;
       var managerId = selectManager().indexOf(val.choice) + 1;
       db.query(
-        "INSERT INTO employee SET ?",
-        {
-          first_name: val.firstName,
-          last_name: val.lastName,
-          manager_id: managerId,
-          role_id: roleId,
-        },
+        "INSERT INTO employee (first_name, last_name, manager_id, role_id) VALUES (?, ?, ?, ?)",
+        [val.firstname, val.lastname, managerId, roleId],
         function (err) {
           if (err) throw err;
           console.table(val);
-          startPrompt();
+          startPrompts();
         }
       );
     });
@@ -181,51 +190,57 @@ function addEmployee() {
 // ==== [Update Employee] ====
 
 function updateEmployee() {
-  db.query(
-    "SELECT employee.last_name, role.title FROM employee JOIN role ON employee.role_id = role.id;",
-    function (err, res) {
-      if (err) throw err;
-      console.log(res);
+  db.query("SELECT * FROM employee", (err, employees) => {
+    if (err) console.log(err);
+    employees = employees.map((employee) => {
+      return {
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id,
+      };
+    });
+    db.query("SELECT * FROM role", (err, roles) => {
+      if (err) console.log(err);
+      roles = roles.map((role) => {
+        return {
+          name: role.title,
+          value: role.id,
+        };
+      });
       inquirer
         .prompt([
           {
-            name: "lastName",
-            type: "rawlist",
-            choices: function () {
-              var lastName = [];
-              for (var i = 0; i < res.length; i++) {
-                lastName.push(res[i].last_name);
-              }
-              return lastName;
-            },
-            message: "Enter employee last name: ",
+            type: "list",
+            name: "selectEmployee",
+            message: "Select employee to update...",
+            choices: employees,
           },
           {
-            name: "role",
-            type: "rawlist",
-            message: "Enter employee's new title: ",
-            choices: selectRole(),
+            type: "list",
+            name: "selectNewRole",
+            message: "Select new employee role...",
+            choices: roles,
           },
         ])
-        .then(function (val) {
-          var roleId = selectRole().indexOf(val.role) + 1;
+        .then((data) => {
           db.query(
-            "UPDATE employee SET WHERE ?",
-            {
-              last_name: val.lastName,
-            },
-            {
-              role_id: roleId,
-            },
+            "UPDATE employee SET ? WHERE ?",
+            [
+              {
+                role_id: data.selectNewRole,
+              },
+              {
+                id: data.selectEmployee,
+              },
+            ],
             function (err) {
               if (err) throw err;
-              console.table(val);
-              startPrompt();
             }
           );
+          console.log("Employee role updated");
+          startPrompts();
         });
-    }
-  );
+    });
+  });
 }
 
 // ==== [Add Role] ====
@@ -257,7 +272,7 @@ function addRole() {
             function (err) {
               if (err) throw err;
               console.table(res);
-              startPrompt();
+              startPrompts();
             }
           );
         });
@@ -285,7 +300,7 @@ function addDepartment() {
         function (err) {
           if (err) throw err;
           console.table(res);
-          startPrompt();
+          startPrompts();
         }
       );
     });
