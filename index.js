@@ -264,3 +264,29 @@ function addRole() {
     }
   );
 }
+
+// ==== [Add Department] ====
+
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        name: "name",
+        type: "input",
+        message: "Enter dept to add:",
+      },
+    ])
+    .then(function (res) {
+      var query = db.query(
+        "INSERT INTO department SET ? ",
+        {
+          name: res.name,
+        },
+        function (err) {
+          if (err) throw err;
+          console.table(res);
+          startPrompt();
+        }
+      );
+    });
+}
