@@ -76,6 +76,7 @@ function promptUser() {
 }
 
 // ==== [View all Employees] ====
+
 function viewAllEmployees() {
   db.query(
     "SELECT employee.first_name, employee.last_name, role.title, role.salary, department.name, CONCAT(e.first_name, ' ' ,e.last_name) AS Manager FROM employee INNER JOIN role on role.id = employee.role_id INNER JOIN department on department.id = role.department_id left join employee e on employee.manager_id = e.id;",
@@ -88,6 +89,7 @@ function viewAllEmployees() {
 }
 
 //  ==== [View all Departments] ====
+
 function viewAllDepartments() {
   db.query(
     "SELECT employee.first_name, employee.last_name, department.name AS Department FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id ORDER BY employee.id;",
@@ -100,6 +102,7 @@ function viewAllDepartments() {
 }
 
 // adds role option in tracker
+
 var roleArr = [];
 function selectRole() {
   db.query("SELECT * FROM role", function (err, res) {
@@ -112,6 +115,7 @@ function selectRole() {
 }
 
 // ==== [Manager Selection] ====
+
 var managersArr = [];
 function selectManager() {
   db.query(
@@ -124,4 +128,52 @@ function selectManager() {
     }
   );
   return managersArr;
+}
+
+// ==== [Add Employee] ====
+
+function addEmployee() {
+  inquirer
+    .prompt([
+      {
+        name: "firstname",
+        type: "input",
+        message: "Enter their first name ",
+      },
+      {
+        name: "lastname",
+        type: "input",
+        message: "Enter their last name ",
+      },
+      {
+        name: "role",
+        type: "list",
+        message: "What is their role? ",
+        choices: selectRole(),
+      },
+      {
+        name: "choice",
+        type: "rawlist",
+        message: "Whats their managers name?",
+        choices: selectManager(),
+      },
+    ])
+    .then(function (val) {
+      var roleId = selectRole().indexOf(val.role) + 1;
+      var managerId = selectManager().indexOf(val.choice) + 1;
+      db.query(
+        "INSERT INTO employee SET ?",
+        {
+          first_name: val.firstName,
+          last_name: val.lastName,
+          manager_id: managerId,
+          role_id: roleId,
+        },
+        function (err) {
+          if (err) throw err;
+          console.table(val);
+          startPrompt();
+        }
+      );
+    });
 }
