@@ -227,3 +227,40 @@ function updateEmployee() {
     }
   );
 }
+
+// ==== [Add Role] ====
+
+function addRole() {
+  db.query(
+    "SELECT role.title AS Title, role.salary AS Salary FROM role",
+    function (err, res) {
+      inquirer
+        .prompt([
+          {
+            name: "Title",
+            type: "input",
+            message: "Enter Role:",
+          },
+          {
+            name: "Salary",
+            type: "input",
+            message: "Enter Salary:",
+          },
+        ])
+        .then(function (res) {
+          db.query(
+            "INSERT INTO role SET ?",
+            {
+              title: res.Title,
+              salary: res.Salary,
+            },
+            function (err) {
+              if (err) throw err;
+              console.table(res);
+              startPrompt();
+            }
+          );
+        });
+    }
+  );
+}
